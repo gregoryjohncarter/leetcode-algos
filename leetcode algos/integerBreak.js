@@ -1,5 +1,6 @@
 // 343. Integer Break
-n = 10;
+// n = 10;
+n = 25;
 
 var integerBreak = function(n) {
   if (n === 2) {
@@ -8,8 +9,6 @@ var integerBreak = function(n) {
     return 2;
   } else if (n === 6) {
     return 9;
-  } else if (n === 8) {
-    return 18;
   }
 
   let partialSum = Math.sqrt(n);
@@ -20,11 +19,13 @@ var integerBreak = function(n) {
   let currentInt = partialSum;
   let sumOfNums = 0;
 
-  // establish an approximate square root with the last index as remainder
-  // this makes a starting point for the initial indexes to start factoring
+  // my solution hinges from using a rounded down sq. root for the early indexes
+  // once the early indexes are added, the last index (remainder) is then divvied up into 2s and 3s
+  // see next 2 comments for breakdown
   for (let i = 1; i < partialSum; i++) {
     numsToFactor.push(currentInt);
 
+    // before the loop ends, add to the remainder(last index) until sum of all ints in array = n
     if (i === partialSum - 1) {
       numsToFactor.forEach((result) => {
         sumOfNums += result;
@@ -34,40 +35,86 @@ var integerBreak = function(n) {
         currentInt++;
       }
 
-      // basically this function is dividing the remainder
-      // near the end of the current array to add to the indexes
-      var roundOutIndexes = function(remainderInt) {
-        if (remainderInt % 2 === 0) {
-          let deplete = remainderInt;
-          while (deplete > 0) {
-            numsToFactor.push(2);
-            deplete -= 2;
-          }
-        } else if (remainderInt % 3 === 0) {
-          let deplete = remainderInt;
+      // this function then divides up that remainder into 3s and 2s
+      var convertRemainder = function(remainderInt) {
+        let deplete = remainderInt;
+        if (remainderInt % 3 === 0) {
           while (deplete > 0) {
             numsToFactor.push(3);
             deplete -= 3;
           }
-        } else if (remainderInt % 5 === 0) {
-          let deplete = remainderInt;
+        } else if (remainderInt % 2 === 0) {
           while (deplete > 0) {
-            numsToFactor.push(3);
             numsToFactor.push(2);
-            deplete -= 5;
+            deplete -= 2;
           }
-        } else if (remainderInt % 7 === 0) {
-          let deplete = remainderInt;
+        } else {
+          // else the remainder isnt divisible by 2 or 3 w/o remainder
           while (deplete > 0) {
-            numsToFactor.push(3);
-            numsToFactor.push(2);
-            numsToFactor.push(2);
-            deplete -= 7;
+            if (deplete > 5) {
+              numsToFactor.push(3);
+              deplete -= 3;
+            } else if (deplete === 5) {
+              numsToFactor.push(3);
+              numsToFactor.push(2);
+              deplete -= 5;
+            } else if (deplete === 4) {
+              numsToFactor.push(2);
+              numsToFactor.push(2);
+              deplete -= 4;
+            } else if (deplete === 3) {
+              numsToFactor.push(3);
+              deplete -= 3;
+            } else {
+              numsToFactor.push(2);
+              deplete -= 2;
+            }
           }
         }
       }
 
-      roundOutIndexes(currentInt);
+      convertRemainder(currentInt);
+    }
+  }
+
+  // while my earlier solution was working well n < 16
+  // it was not accurate if the early indexes were > 3
+  // this function brings down arr[i] if > 3 
+  // while creating new indexes with the remainder
+  var earlyShift = function() {
+    let i = 0;
+    let remainder = 0;
+    let placekeeper = null;
+
+    while (i < numsToFactor.length) {
+      while (numsToFactor[i] > 3) {
+        numsToFactor[i]--;
+        remainder++;
+        placekeeper = i;
+      }    
+      i++
+    }
+
+    while (remainder > 0) {
+      while (remainder > 5) {
+        numsToFactor.splice(placekeeper + 1, 0, 3);
+        remainder -= 3;
+      } 
+      if (remainder === 5) {
+        numsToFactor.splice(placekeeper + 1, 0, 3);
+        numsToFactor.splice(placekeeper + 2, 0, 2);
+        remainder -= 5;
+      } else if (remainder === 4) {
+        numsToFactor.splice(placekeeper + 1, 0, 2);
+        numsToFactor.splice(placekeeper + 2, 0, 2);
+        remainder -= 4;
+      } else if (remainder === 3) {
+        numsToFactor.splice(placekeeper + 1, 0, 3);
+        remainder -= 3;
+      } else {
+        numsToFactor.splice(placekeeper + 1, 0, 2);
+        remainder -= 2;
+      }
     }
   }
 
@@ -80,8 +127,9 @@ var integerBreak = function(n) {
     return totalVal;
   }
 
-  console.log(numsToFactor);
+  earlyShift();
   const totalVal = tallyProduct(numsToFactor);
+
   return totalVal;
 };
 
